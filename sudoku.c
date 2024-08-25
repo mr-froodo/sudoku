@@ -167,25 +167,21 @@ check_box (psudoku s, int n)
   a = s->a;
   c = *(a + n);
 
-  //   i = n / 9;  /* Row number */
-  //   i -= i % 3; /* Number of first row of block */
+  i = n / 9;  /* Row number */
+  i -= i % 3; /* Number of first row of block */
 
-  //   j = n % 9;  /* Col number */
-  //   j -= j % 3; /* Number of first col of block */
+  j = n % 9;  /* Col number */
+  j -= j % 3; /* Number of first col of block */
 
-  //   k = i * 9 + j; /* Index of top left entry of block */
+  k = i * 9 + j; /* Index of top left entry of block */
 
-  i = n - n % 3; /*First index in row of block */
-  j = n - 
-
-  if (a[k] +)
-
-    /* Check against each entry of block */
-    for (i = 0; i < 3; i++)
-      for (j = 0; j < 3; j++)
-        if (k + j + i * 9 != n)
-          if (*(a + (k + j + i * 9)) == c)
-            return 1;
+  /* Check against each entry of block */
+  for (i = 0; i < 3; i++)
+    for (j = 0; j < 3; j++)
+      if (k + j + i * 9 != n)
+        if (*(a + (k + j + i * 9)) == c)
+          return 1;
+  
   /* All checks pased */
   return 0;
 }

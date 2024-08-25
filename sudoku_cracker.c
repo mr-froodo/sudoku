@@ -1,4 +1,3 @@
-#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -59,9 +58,7 @@ main ()
   int n, steps;
 
   printf ("==============================\n"
-          "Cracking Sudoku...\n"
-          "%d threads available.\n\n",
-          omp_get_max_threads ());
+          "Cracking Sudoku...\n");
 
   printf ("==============================\n"
           "Original Sudoku:\n\n");
@@ -253,12 +250,9 @@ check_position (char *a, int n)
 {
   int r, c, b;
 
-#pragma omp parallel
-  {
-    r = check_row (a, n);
-    c = check_col (a, n);
-    b = check_box (a, n);
-  }
+  r = check_row (a, n);
+  c = check_col (a, n);
+  b = check_box (a, n);
 
   if (r + c + b)
     return 1;
