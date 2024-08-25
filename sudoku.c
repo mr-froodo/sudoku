@@ -48,6 +48,17 @@ del_sudoku (psudoku s)
   free (s->a);
 }
 
+void
+copy_sudoku (pcsudoku s, psudoku t)
+{
+  int i;
+
+  for (i = 0; i < 162; i++)
+    {
+      t->a[i] = s->a[i];
+    }
+}
+
 /*************************************
  * Access methods
  */
@@ -57,6 +68,68 @@ set_sudoku (psudoku s, const char *cs)
 {
   strcpy (s->a, cs);
 }
+
+int
+sudoku_locate_entries (psudoku s)
+{
+  int i, j;
+  int max, result;
+  int u, r, d, l;
+  char *f;
+
+  f = s->a + 81;
+
+  /* Up */
+  u = 0;
+  for (i = 0; i < 45; i++)
+    if (f[i])
+      u++;
+
+  max = u;
+  result = 0;
+
+  /* Right */
+  r = 0;
+  for (i = 0; i < 9; i++)
+    for (j = 4; j < 9; j++)
+      if (f[j + i * 9])
+        r++;
+
+  if (r > max)
+    {
+      max = r;
+      result = 1;
+    }
+
+  /* DOwn */
+  d = 0;
+  for (i = 36; i < 81; i++)
+    if (f[i])
+      d++;
+
+  if (d > max)
+    {
+      max = d;
+      result = 2;
+    }
+
+  /* Left */
+  l = 0;
+  for (i = 0; i < 9; i++)
+    for (j = 0; j < 5; j++)
+      if (f[j + i * 9])
+        l++;
+
+  if (l > max)
+    result = 3;
+
+  //   printf ("U\tR\tD\tL\n"
+  //           "%d\t%d\t%d\t%d\n",
+  //           u, r, d, l);
+
+  return result;
+}
+
 /************************************
  * I/O
  */
@@ -95,6 +168,30 @@ prepare_sudoku (psudoku s)
       else
         f[i] = 1;
     }
+}
+
+void
+rotate_sudoku (psudoku s)
+{
+  psudoku t;
+  int i, j;
+
+  t = new_sudoku ();
+  init_sudoku (t);
+
+  copy_sudoku (s, t);
+
+  for (i = 0; i < 9; i++)
+    for (j = 0; j < 9; j++)
+      {
+        s->a[j + i * 9] = t->a[(8 - i) + j * 9];
+      }
+
+  prepare_sudoku (s);
+
+  del_sudoku (t);
+
+  s->rotations++;
 }
 
 int
@@ -181,7 +278,7 @@ check_box (psudoku s, int n)
       if (k + j + i * 9 != n)
         if (*(a + (k + j + i * 9)) == c)
           return 1;
-  
+
   /* All checks pased */
   return 0;
 }

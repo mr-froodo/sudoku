@@ -8,23 +8,29 @@ main ()
 {
   psudoku s;
   clock_t begin, end;
-  int result;
+  int i, n, result;
   double time_spent;
 
   s = new_sudoku ();
   init_sudoku (s);
 
   set_sudoku (s, "123456789"
-                 "000000000"
-                 "000000000"
-                 "000000000"
-                 "000000000"
-                 "000000000"
-                 "000000000"
-                 "000000000"
+                 "000000123"
+                 "000000045"
+                 "000000002"
+                 "000000004"
+                 "000000010"
+                 "000000430"
+                 "000000590"
                  "000000001");
 
   prepare_sudoku (s);
+
+  show_sudoku (s);
+  n = sudoku_locate_entries (s);
+  printf ("Rotate %d times.\n", n);
+  for (i = 0; i < n; i++)
+    rotate_sudoku (s);
 
   show_sudoku (s);
 
@@ -39,6 +45,10 @@ main ()
                    time_spent, result)
          : printf ("Sorry, no solution found.\n");
 
+  show_sudoku (s);
+  printf ("Rotate %d times\n", 4 - (s->rotations % 4));
+  while (s->rotations % 4)
+    rotate_sudoku (s);
   show_sudoku (s);
 
   del_sudoku (s);
