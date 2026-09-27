@@ -2,7 +2,8 @@
 #include <string.h>
 #include <time.h>
 
-#include "sudoku.h"
+#include "sudoku/grid.h"
+#include "sudoku/solver.h"
 
 /* Default puzzle, used when none is given on the command line */
 static const char *default_puzzle = "123456789"

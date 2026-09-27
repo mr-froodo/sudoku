@@ -1,9 +1,9 @@
-#ifndef SUDOKU_H
-#define SUDOKU_H
+#ifndef SUDOKU_GRID_H
+#define SUDOKU_GRID_H
 
 struct _sudoku
 {
-  char *a;       /* array containing values */
+  char *a;       /* 81 cell values ('0' = empty) followed by 81 fixed flags */
   int rotations; /* Count how many times sudoku has been rotated */
 };
 
@@ -13,13 +13,14 @@ typedef const sudoku *pcsudoku;
 
 /* Constructors */
 
-psudoku new_sudoku ();
+psudoku new_sudoku (void);
 
-psudoku init_sudoku ();
+psudoku init_sudoku (psudoku s);
 
-psudoku create_empty_sudoku ();
+psudoku create_empty_sudoku (void);
 
-void del_sudoku ();
+/* Free a sudoku created by new_sudoku or create_empty_sudoku */
+void del_sudoku (psudoku s);
 
 void copy_sudoku (pcsudoku s, psudoku t);
 
@@ -38,23 +39,14 @@ int sudoku_locate_entries (psudoku s);
 
 /* I/O */
 
-void show_sudoku ();
+void show_sudoku (psudoku s);
 
-/* Solve */
+/* Transformations */
 
+/* Mark every non-empty cell as fixed */
 void prepare_sudoku (psudoku s);
 
 /* Rotate left */
 void rotate_sudoku (psudoku s);
-
-int check_row (psudoku s, int n);
-
-int check_col (psudoku s, int n);
-
-int check_box (psudoku s, int n);
-
-int check_position (psudoku s, int n);
-
-int solve_sudoku (psudoku s);
 
 #endif
