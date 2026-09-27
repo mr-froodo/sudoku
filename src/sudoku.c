@@ -14,6 +14,7 @@ psudoku
 init_sudoku (psudoku s)
 {
   s->a = malloc (162);
+  s->rotations = 0;
 
   return s;
 }

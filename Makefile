@@ -1,15 +1,35 @@
 CC = gcc
+CPPFLAGS = -Iinclude
 CFLAGS = -Wall -Wextra -pedantic
 LDFLAGS =
 LDLIBS =
 
 RM = rm -f
 
+BUILD = build
 
-scrack: scrack.o sudoku.o
-sudoku_cracker: sudoku_cracker.o
+SRCS = $(wildcard src/*.c)
+OBJS = $(patsubst src/%.c,$(BUILD)/%.o,$(SRCS))
 
-.PHONY: clean
+.PHONY: all test clean
+
+all: $(BUILD)/scrack
+
+# Brute-force solver test executable
+$(BUILD)/scrack: $(BUILD)/scrack.o $(OBJS)
+	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+
+$(BUILD)/%.o: src/%.c include/sudoku.h | $(BUILD)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+
+$(BUILD)/%.o: test/%.c include/sudoku.h | $(BUILD)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+
+$(BUILD):
+	mkdir -p $@
+
+test: $(BUILD)/scrack
+	./$(BUILD)/scrack
 
 clean:
-	$(RM) sudoku_cracker sudoku_cracker.o scrack scrack.o sudoku.o
+	$(RM) -r $(BUILD)
