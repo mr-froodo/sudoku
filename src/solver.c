@@ -1,120 +1,70 @@
 #include "sudoku/solver.h"
 
+/* Each check returns 1 if the value at cell n already appears elsewhere
+ * in its row, column or box, and 0 otherwise. */
+
 static int
-check_row (psudoku s, int n)
+check_row (const sudoku *s, int n)
 {
-  int i;  /* Index of first entry in row */
-  int k;  /* Counter */
-  char c; /* Value of entry to check */
-  char *a;
+  const char *a = s->a;
+  const char c = a[n];           /* Value of entry to check */
+  const int first = (n / 9) * 9; /* Index of first entry in row */
 
-  a = s->a;
-
-  /* Store value of entry */
-  c = *(a + n);
-
-  /* Compute index of firste entry in row */
-  i = (n / 9) * 9; /* Integer devision! */
-
-  /* Check against left entries */
-  for (k = i; k < n; k++)
-    if (c == *(a + k))
+  for (int k = first; k < first + 9; k++)
+    if (k != n && a[k] == c)
       return 1;
 
-  /* Check against right etries */
-  for (k = n + 1; k < i + 9; k++)
-    if (c == *(a + k))
-      return 1;
-
-  /* All checks are passed */
   return 0;
 }
 
 static int
-check_col (psudoku s, int n)
+check_col (const sudoku *s, int n)
 {
-  int j;  /* Index of first entry in col */
-  int k;  /* Counter */
-  char c; /* Value of entry to check */
-  char *a;
+  const char *a = s->a;
+  const char c = a[n];     /* Value of entry to check */
+  const int first = n % 9; /* Index of first entry in col */
 
-  a = s->a;
-
-  /* Store value of entry */
-  c = *(a + n);
-
-  /* Compute index of firste entry in col */
-  j = n % 9;
-
-  /* Check against above entries */
-  for (k = j; k < n; k += 9)
-    if (c == *(a + k))
+  for (int k = first; k < 81; k += 9)
+    if (k != n && a[k] == c)
       return 1;
 
-  /* Check against below etries */
-  for (k = n + 9; k < 81; k += 9)
-    if (c == *(a + k))
-      return 1;
-
-  /* All checks are passed */
   return 0;
 }
 
 static int
-check_box (psudoku s, int n)
+check_box (const sudoku *s, int n)
 {
-  int i, j, k; /* Index of top left entry of box */
-  char c;      /* Value of position to check */
-  char *a;
+  const char *a = s->a;
+  const char c = a[n];                /* Value of entry to check */
+  const int row = n / 9 - (n / 9) % 3; /* First row of box */
+  const int col = n % 9 - (n % 9) % 3; /* First col of box */
+  const int first = row * 9 + col;     /* Index of top left entry of box */
 
-  a = s->a;
-  c = *(a + n);
+  for (int i = 0; i < 3; i++)
+    for (int j = 0; j < 3; j++)
+      {
+        const int k = first + j + i * 9;
 
-  i = n / 9;  /* Row number */
-  i -= i % 3; /* Number of first row of block */
-
-  j = n % 9;  /* Col number */
-  j -= j % 3; /* Number of first col of block */
-
-  k = i * 9 + j; /* Index of top left entry of block */
-
-  /* Check against each entry of block */
-  for (i = 0; i < 3; i++)
-    for (j = 0; j < 3; j++)
-      if (k + j + i * 9 != n)
-        if (*(a + (k + j + i * 9)) == c)
+        if (k != n && a[k] == c)
           return 1;
-
-  /* All checks pased */
-  return 0;
-}
-
-int
-check_position (psudoku s, int n)
-{
-
-  if (check_row (s, n))
-    return 1;
-
-  if (check_col (s, n))
-    return 1;
-
-  if (check_box (s, n))
-    return 1;
+      }
 
   return 0;
 }
 
 int
-solve_sudoku (psudoku s)
+check_position (const sudoku *s, int n)
 {
-  int n, steps;
-  char *a, *f;
+  return check_row (s, n) || check_col (s, n) || check_box (s, n);
+}
 
-  a = s->a;
-  f = a + 81;
-
-  steps = n = 0;
+int
+solve_sudoku (sudoku *s)
+{
+  char *a = s->a;
+  const char *f = s->a + 81;
+  int n = 0;
+  int steps = 0;
 
   while (n < 81)
     {
@@ -122,50 +72,35 @@ solve_sudoku (psudoku s)
         {
           /* Value is fixed -> move on */
           n++;
+          continue;
+        }
+
+      /* Try the next value ('0' -> '1' for an empty cell) */
+      a[n]++;
+      steps++;
+
+      /* Increase value while checks fail and value <= 9 */
+      while (check_position (s, n) && a[n] <= '9')
+        {
+          a[n]++;
+          steps++;
+        }
+
+      if (a[n] > '9')
+        {
+          /* All values failed: clear cell and go back */
+          a[n] = '0';
+          n--;
+          while (f[n])
+            /* Value is fixed -> go further back */
+            n--;
         }
       else
         {
-          /* Cell has to be filled */
-          if (a[n] == '0')
-            {
-              /* Cell is empty --> Start with 1 */
-              a[n] = '1';
-              steps++;
-            }
-          else
-            {
-              /* Cell already filled --> Increase value */
-              a[n] += 1;
-              steps++;
-            }
-
-          /* While checks fail and c<=9*/
-          while (check_position (s, n) && a[n] <= '9')
-            {
-              a[n] += 1;
-              steps++;
-            }
-
-          /* Go back if all checks have failed */
-          if (a[n] == '9' + 1)
-            {
-              /* Clear cell and go back */
-              a[n] = '0';
-              n--;
-              while (f[n])
-                /* Value is fixed -> go further back */
-                n--;
-            }
-          else
-            {
-              /* Move on */
-              n++;
-            }
+          /* Move on */
+          n++;
         }
     }
 
-  if (n == 81)
-    return steps;
-  else
-    return 0;
+  return n == 81 ? steps : 0;
 }

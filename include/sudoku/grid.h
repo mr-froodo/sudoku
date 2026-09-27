@@ -1,31 +1,27 @@
 #ifndef SUDOKU_GRID_H
 #define SUDOKU_GRID_H
 
-struct _sudoku
+typedef struct sudoku
 {
   char *a;       /* 81 cell values ('0' = empty) followed by 81 fixed flags */
   int rotations; /* Count how many times sudoku has been rotated */
-};
-
-typedef struct _sudoku sudoku;
-typedef sudoku *psudoku;
-typedef const sudoku *pcsudoku;
+} sudoku;
 
 /* Constructors */
 
-psudoku new_sudoku (void);
+sudoku *new_sudoku (void);
 
-psudoku init_sudoku (psudoku s);
+sudoku *init_sudoku (sudoku *s);
 
-psudoku create_empty_sudoku (void);
+sudoku *create_empty_sudoku (void);
 
 /* Free a sudoku created by new_sudoku or create_empty_sudoku */
-void del_sudoku (psudoku s);
+void del_sudoku (sudoku *s);
 
-void copy_sudoku (pcsudoku s, psudoku t);
+void copy_sudoku (const sudoku *s, sudoku *t);
 
 /* Access methods */
-void set_sudoku (psudoku s, const char *cs);
+void set_sudoku (sudoku *s, const char *cs);
 
 /* Locate where most entries are to be found
  *
@@ -35,18 +31,18 @@ void set_sudoku (psudoku s, const char *cs);
  * 2 lower half
  * 3 left half
  */
-int sudoku_locate_entries (psudoku s);
+int sudoku_locate_entries (const sudoku *s);
 
 /* I/O */
 
-void show_sudoku (psudoku s);
+void show_sudoku (const sudoku *s);
 
 /* Transformations */
 
 /* Mark every non-empty cell as fixed */
-void prepare_sudoku (psudoku s);
+void prepare_sudoku (sudoku *s);
 
 /* Rotate left */
-void rotate_sudoku (psudoku s);
+void rotate_sudoku (sudoku *s);
 
 #endif

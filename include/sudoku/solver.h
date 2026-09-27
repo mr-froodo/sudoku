@@ -4,9 +4,9 @@
 #include "sudoku/grid.h"
 
 /* Return 1 if the value at cell n clashes with its row, column or box */
-int check_position (psudoku s, int n);
+int check_position (const sudoku *s, int n);
 
 /* Solve by backtracking; return the number of steps taken, 0 on failure */
-int solve_sudoku (psudoku s);
+int solve_sudoku (sudoku *s);
 
 #endif

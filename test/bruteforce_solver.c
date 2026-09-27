@@ -20,26 +20,79 @@ static const char *default_puzzle = "123456789"
 static int
 valid_puzzle (const char *p)
 {
-  int i;
-
   if (strlen (p) != 81)
     return 0;
-  for (i = 0; i < 81; i++)
+
+  for (int i = 0; i < 81; i++)
     if (p[i] < '0' || p[i] > '9')
       return 0;
+
   return 1;
+}
+
+/* Solve s and report the outcome */
+static void
+timed_solve (sudoku *s)
+{
+  const clock_t begin = clock ();
+  const int steps = solve_sudoku (s);
+  const clock_t end = clock ();
+  const double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+
+  if (steps)
+    printf ("Success!\n"
+            "Solution found in %.2e seconds after %d steps.\n",
+            time_spent, steps);
+  else
+    printf ("Sorry, no solution found.\n");
+}
+
+/* Rotate s so that most given entries come first */
+static void
+rotate_for_solving (sudoku *s)
+{
+  const int n = sudoku_locate_entries (s);
+
+  printf ("Rotate %d times.\n", n);
+  for (int i = 0; i < n; i++)
+    rotate_sudoku (s);
+}
+
+/* Rotate s back to its original orientation */
+static void
+rotate_back (sudoku *s)
+{
+  printf ("Rotate %d times\n", 4 - (s->rotations % 4));
+  while (s->rotations % 4)
+    rotate_sudoku (s);
+}
+
+static void
+solve_puzzle (const char *puzzle)
+{
+  sudoku *s = init_sudoku (new_sudoku ());
+
+  set_sudoku (s, puzzle);
+  prepare_sudoku (s);
+  show_sudoku (s);
+
+  rotate_for_solving (s);
+  show_sudoku (s);
+
+  timed_solve (s);
+  show_sudoku (s);
+
+  rotate_back (s);
+  show_sudoku (s);
+
+  del_sudoku (s);
 }
 
 int
 main (int argc, char *argv[])
 {
-  psudoku s;
-  clock_t begin, end;
-  int i, n, result;
-  double time_spent;
-  const char *puzzle;
+  const char *puzzle = argc > 1 ? argv[1] : default_puzzle;
 
-  puzzle = argc > 1 ? argv[1] : default_puzzle;
   if (argc > 2 || !valid_puzzle (puzzle))
     {
       fprintf (stderr, "Usage: %s [PUZZLE]\n"
@@ -49,39 +102,7 @@ main (int argc, char *argv[])
       return 1;
     }
 
-  s = new_sudoku ();
-  init_sudoku (s);
-
-  set_sudoku (s, puzzle);
-
-  prepare_sudoku (s);
-
-  show_sudoku (s);
-  n = sudoku_locate_entries (s);
-  printf ("Rotate %d times.\n", n);
-  for (i = 0; i < n; i++)
-    rotate_sudoku (s);
-
-  show_sudoku (s);
-
-  begin = clock ();
-  result = solve_sudoku (s);
-  end = clock ();
-
-  time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-
-  result ? printf ("Success!\n"
-                   "Solution found in %.2e seconds after %d steps.\n",
-                   time_spent, result)
-         : printf ("Sorry, no solution found.\n");
-
-  show_sudoku (s);
-  printf ("Rotate %d times\n", 4 - (s->rotations % 4));
-  while (s->rotations % 4)
-    rotate_sudoku (s);
-  show_sudoku (s);
-
-  del_sudoku (s);
+  solve_puzzle (puzzle);
 
   return 0;
 }
