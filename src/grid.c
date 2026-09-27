@@ -1,141 +1,80 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "sudoku/grid.h"
 
-sudoku *
-new_sudoku (void)
+int
+set_sudoku (sudoku *s, const char *text)
 {
-  return malloc (sizeof (sudoku));
-}
-
-sudoku *
-init_sudoku (sudoku *s)
-{
-  s->a = malloc (162);
-  s->rotations = 0;
-
-  return s;
-}
-
-sudoku *
-create_empty_sudoku (void)
-{
-  sudoku *s = init_sudoku (new_sudoku ());
-  char *a = s->a;
-  char *f = a + 81;
-
   for (int i = 0; i < 81; i++)
     {
-      a[i] = '0';
-      f[i] = 0;
+      const char c = text[i];
+
+      if (c >= '1' && c <= '9')
+        s->cell[i] = (uint8_t)(c - '0');
+      else if (c == '0' || c == '.')
+        s->cell[i] = 0;
+      else
+        return 0; /* Also catches a string that is too short */
     }
 
-  return s;
+  return text[81] == '\0';
 }
-
-void
-del_sudoku (sudoku *s)
-{
-  if (!s)
-    return;
-
-  free (s->a);
-  free (s);
-}
-
-void
-copy_sudoku (const sudoku *s, sudoku *t)
-{
-  memcpy (t->a, s->a, 162);
-}
-
-/*************************************
- * Access methods
- */
-
-void
-set_sudoku (sudoku *s, const char *cs)
-{
-  strcpy (s->a, cs);
-}
-
-/* Count fixed cells in rows [r0, r1) and columns [c0, c1) */
-static int
-count_fixed (const char *f, int r0, int r1, int c0, int c1)
-{
-  int count = 0;
-
-  for (int i = r0; i < r1; i++)
-    for (int j = c0; j < c1; j++)
-      if (f[j + i * 9])
-        count++;
-
-  return count;
-}
-
-int
-sudoku_locate_entries (const sudoku *s)
-{
-  const char *f = s->a + 81;
-  const int count[4] = {
-    count_fixed (f, 0, 5, 0, 9), /* Upper half */
-    count_fixed (f, 0, 9, 4, 9), /* Right half */
-    count_fixed (f, 4, 9, 0, 9), /* Lower half */
-    count_fixed (f, 0, 9, 0, 5), /* Left half */
-  };
-  int result = 0;
-
-  for (int k = 1; k < 4; k++)
-    if (count[k] > count[result])
-      result = k;
-
-  return result;
-}
-
-/************************************
- * I/O
- */
 
 void
 show_sudoku (const sudoku *s)
 {
   for (int i = 0; i < 9; i++)
     {
+      if (i == 3 || i == 6)
+        printf ("------+-------+------\n");
+
       for (int j = 0; j < 9; j++)
-        printf ("%c ", s->a[j + i * 9]);
-      printf ("\n");
+        {
+          const int d = s->cell[j + i * 9];
+
+          if (j == 3 || j == 6)
+            printf ("| ");
+          printf ("%c%s", d ? '0' + d : '.', j < 8 ? " " : "\n");
+        }
     }
   printf ("\n");
 }
 
-/************************************
- * Transformations
- */
-
-void
-prepare_sudoku (sudoku *s)
+int
+check_sudoku (const sudoku *s)
 {
-  const char *a = s->a;
-  char *f = s->a + 81;
+  unsigned used[27] = { 0 }; /* Rows 0-8, columns 9-17, boxes 18-26 */
 
   for (int i = 0; i < 81; i++)
-    f[i] = a[i] != '0';
+    {
+      const unsigned d = s->cell[i];
+      const int r = i / 9;
+      const int c = 9 + i % 9;
+      const int b = 18 + (i / 27) * 3 + (i % 9) / 3;
+      const unsigned bit = d ? 1u << (d - 1) : 0;
+
+      if (d > 9 || ((used[r] | used[c] | used[b]) & bit))
+        return 0;
+
+      used[r] |= bit;
+      used[c] |= bit;
+      used[b] |= bit;
+    }
+
+  return 1;
 }
 
-void
-rotate_sudoku (sudoku *s)
+int
+solves_sudoku (const sudoku *puzzle, const sudoku *solution)
 {
-  char t[81];
+  for (int i = 0; i < 81; i++)
+    {
+      const unsigned given = puzzle->cell[i];
+      const unsigned d = solution->cell[i];
 
-  memcpy (t, s->a, 81);
+      if (d < 1 || d > 9 || (given && given != d))
+        return 0;
+    }
 
-  for (int i = 0; i < 9; i++)
-    for (int j = 0; j < 9; j++)
-      s->a[j + i * 9] = t[(8 - i) + j * 9];
-
-  prepare_sudoku (s);
-
-  s->rotations++;
+  return check_sudoku (solution);
 }

@@ -1,5 +1,5 @@
+#include <stdint.h>
 #include <stdio.h>
-#include <string.h>
 #include <time.h>
 
 #include "sudoku/grid.h"
@@ -16,93 +16,66 @@ static const char *default_puzzle = "123456789"
                                     "000000590"
                                     "000000001";
 
-/* A puzzle is 81 digits read row by row, 0 marking an empty cell */
-static int
-valid_puzzle (const char *p)
-{
-  if (strlen (p) != 81)
-    return 0;
-
-  for (int i = 0; i < 81; i++)
-    if (p[i] < '0' || p[i] > '9')
-      return 0;
-
-  return 1;
-}
-
-/* Solve s and report the outcome */
-static void
-timed_solve (sudoku *s)
+/* Average solve time in seconds, repeating until 0.1 s have elapsed so
+ * that the clock resolution does not dominate */
+static double
+average_solve_time (const sudoku *puzzle)
 {
   const clock_t begin = clock ();
-  const int steps = solve_sudoku (s);
-  const clock_t end = clock ();
-  const double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+  clock_t end = begin;
+  long runs = 0;
 
-  if (steps)
-    printf ("Success!\n"
-            "Solution found in %.2e seconds after %d steps.\n",
-            time_spent, steps);
-  else
-    printf ("Sorry, no solution found.\n");
-}
+  do
+    {
+      sudoku s = *puzzle;
 
-/* Rotate s so that most given entries come first */
-static void
-rotate_for_solving (sudoku *s)
-{
-  const int n = sudoku_locate_entries (s);
+      solve_sudoku (&s, NULL);
+      runs++;
+      end = clock ();
+    }
+  while (end - begin < CLOCKS_PER_SEC / 10);
 
-  printf ("Rotate %d times.\n", n);
-  for (int i = 0; i < n; i++)
-    rotate_sudoku (s);
-}
-
-/* Rotate s back to its original orientation */
-static void
-rotate_back (sudoku *s)
-{
-  printf ("Rotate %d times\n", 4 - (s->rotations % 4));
-  while (s->rotations % 4)
-    rotate_sudoku (s);
-}
-
-static void
-solve_puzzle (const char *puzzle)
-{
-  sudoku *s = init_sudoku (new_sudoku ());
-
-  set_sudoku (s, puzzle);
-  prepare_sudoku (s);
-  show_sudoku (s);
-
-  rotate_for_solving (s);
-  show_sudoku (s);
-
-  timed_solve (s);
-  show_sudoku (s);
-
-  rotate_back (s);
-  show_sudoku (s);
-
-  del_sudoku (s);
+  return (double)(end - begin) / CLOCKS_PER_SEC / (double)runs;
 }
 
 int
 main (int argc, char *argv[])
 {
-  const char *puzzle = argc > 1 ? argv[1] : default_puzzle;
+  const char *text = argc > 1 ? argv[1] : default_puzzle;
+  sudoku puzzle;
+  sudoku s;
+  uint64_t guesses = 0;
 
-  if (argc > 2 || !valid_puzzle (puzzle))
+  if (argc > 2 || !set_sudoku (&puzzle, text))
     {
       fprintf (stderr, "Usage: %s [PUZZLE]\n"
-                       "PUZZLE is 81 digits read row by row, "
-                       "0 marking an empty cell.\n",
+                       "PUZZLE is 81 characters read row by row: digits, "
+                       "with 0 or . marking an empty cell.\n",
                argv[0]);
       return 1;
     }
 
-  solve_puzzle (puzzle);
+  show_sudoku (&puzzle);
+
+  s = puzzle;
+  if (!solve_sudoku (&s, &guesses))
+    {
+      printf ("Sorry, no solution found after %llu guesses.\n",
+              (unsigned long long)guesses);
+      return 2;
+    }
+
+  if (!solves_sudoku (&puzzle, &s))
+    {
+      printf ("Error: the solver returned an invalid solution.\n");
+      show_sudoku (&s);
+      return 3;
+    }
+
+  printf ("Success!\n"
+          "Solution found in %.2f us after %llu guesses.\n\n",
+          average_solve_time (&puzzle) * 1e6, (unsigned long long)guesses);
+  show_sudoku (&s);
 
   return 0;
 }
