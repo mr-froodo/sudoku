@@ -25,12 +25,19 @@ if(SUDOKU_NATIVE)
   endif()
 endif()
 
+# Use the AVX2 rules when the target supports AVX2 (e.g. with SUDOKU_NATIVE
+# on a CPU that has it); otherwise the portable scalar rules are used
+option(SUDOKU_SIMD "Use SIMD (AVX2) rules where the target supports them" ON)
+
 # Solver mechanics
 add_library(sudoku
   src/grid.c
   src/solver.c
 )
 target_include_directories(sudoku PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+if(NOT SUDOKU_SIMD)
+  target_compile_definitions(sudoku PRIVATE SUDOKU_NO_SIMD)
+endif()
 
 # Brute-force solver test executable
 add_executable(bruteforce_solver test/bruteforce_solver.c)
@@ -63,4 +70,14 @@ if(BUILD_TESTING)
   # Solves and verifies every benchmark puzzle
   add_test(NAME benchmark_puzzles
     COMMAND benchmark ${CMAKE_CURRENT_SOURCE_DIR}/bench/hard.txt)
+
+  # The same with the portable scalar rules, so that both paths stay tested
+  add_library(sudoku_scalar STATIC src/grid.c src/solver.c)
+  target_include_directories(sudoku_scalar
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+  target_compile_definitions(sudoku_scalar PRIVATE SUDOKU_NO_SIMD)
+  add_executable(benchmark_scalar bench/benchmark.c)
+  target_link_libraries(benchmark_scalar PRIVATE sudoku_scalar)
+  add_test(NAME benchmark_puzzles_scalar
+    COMMAND benchmark_scalar ${CMAKE_CURRENT_SOURCE_DIR}/bench/hard.txt)
 endif()
